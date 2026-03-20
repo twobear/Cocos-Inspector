@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Cocos Creator Inspector",
+  "version": "1.1.0",
+  "description": "Modern DevTools extension for inspecting Cocos Creator game nodes.",
+  "devtools_page": "devtools/devtools.html",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_icon": {
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "128": "icons/icon128.png"
+  }
+}
