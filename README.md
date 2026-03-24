@@ -48,5 +48,9 @@ A modern, high-performance Chrome DevTools extension for inspecting and debuggin
 - **Efficient Communication**: Uses `chrome.devtools.inspectedWindow.eval` for fast, asynchronous data polling and property updates.
 - **UI Stack**: Pure Vanilla JS & CSS for maximum performance and zero external dependencies.
 
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
 ---
 Built with ❤️ for Cocos Creator developers.
