@@ -10,9 +10,15 @@
   <div class="header">
     <div style="font-weight: bold; color: var(--accent-color); font-size: 14px;">COCOS</div>
     <input type="text" id="search-input" class="search-input" placeholder="Search nodes by name...">
-    <button id="refresh-btn" style="background:none; border:none; cursor:pointer; color:var(--text-secondary);">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-    </button>
+    <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+      <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; color: var(--text-secondary);">
+        <input type="checkbox" id="auto-refresh-toggle" checked>
+        Auto
+      </label>
+      <button id="refresh-btn" style="background:none; border:none; cursor:pointer; color:var(--text-secondary);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+      </button>
+    </div>
   </div>
 
   <div class="main-container">

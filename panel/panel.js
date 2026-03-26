@@ -8,12 +8,14 @@ let state = {
   selectedUuid: null,
   expandedUuids: new Set(),
   searchQuery: '',
-  lastUpdate: Date.now()
+  lastUpdate: Date.now(),
+  autoRefresh: true
 };
 
 const treeEl = document.getElementById('tree-container');
 const propEl = document.getElementById('property-container');
 const searchInput = document.getElementById('search-input');
+const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
 const contextMenu = document.getElementById('context-menu');
 
 const ICONS = {
@@ -96,16 +98,24 @@ function renderTree() {
     treeEl.innerHTML = '<div class="empty-state">No Cocos scene detected</div>';
     return;
   }
+  // Clear empty state if exists
+  const emptyState = treeEl.querySelector('.empty-state');
+  if (emptyState) emptyState.remove();
+  
   syncNodeList(state.nodes, treeEl, 0);
 }
 
 function syncNodeList(nodes, container, depth) {
   const fragment = document.createDocumentFragment();
+  const currentUuids = new Set(nodes.map(n => n.uuid));
+  
+  // Create or update nodes
   nodes.forEach(node => {
     const isVisible = !state.searchQuery || node.name.toLowerCase().includes(state.searchQuery.toLowerCase()) || checkHasVisibleChild(node);
     if (!isVisible) return;
 
     let nodeWrapper = container.querySelector(`[data-uuid="${node.uuid}"]`);
+    let isNew = false;
     if (!nodeWrapper) {
       nodeWrapper = document.createElement('div');
       nodeWrapper.className = 'node-wrapper';
@@ -114,20 +124,27 @@ function syncNodeList(nodes, container, depth) {
       const itemEl = document.createElement('div');
       itemEl.className = 'tree-node';
       nodeWrapper.appendChild(itemEl);
+      isNew = true;
     }
 
     const itemEl = nodeWrapper.querySelector('.tree-node');
-    itemEl.className = `tree-node ${state.selectedUuid === node.uuid ? 'selected' : ''}`;
-    
+    const isSelected = state.selectedUuid === node.uuid;
     const isExpanded = state.expandedUuids.has(node.uuid);
-    itemEl.innerHTML = `
-      <span class="toggle-icon" style="width:16px; display:inline-block; font-family:monospace; text-align:center;">
-        ${node.children.length > 0 ? (isExpanded ? '▼' : '▶') : '&nbsp;'}
-      </span>
-      <span class="node-type-icon">${getTypeIcon(node.type)}</span>
-      <span class="tree-node-name ${node.active ? '' : 'hidden'}">${node.name}</span>
-      <span class="eye-icon ${node.active ? 'active' : 'inactive'}" title="${node.active ? 'Hide' : 'Show'} Node">${getEyeIcon(node.active)}</span>
-    `;
+    
+    // Only update innerHTML if state changed to optimize performance
+    const stateKey = `${node.name}-${node.active}-${node.type}-${isSelected}-${isExpanded}-${node.children.length}`;
+    if (nodeWrapper.getAttribute('data-state') !== stateKey) {
+      itemEl.className = `tree-node ${isSelected ? 'selected' : ''}`;
+      itemEl.innerHTML = `
+        <span class="toggle-icon" style="width:16px; display:inline-block; font-family:monospace; text-align:center;">
+          ${node.children.length > 0 ? (isExpanded ? '▼' : '▶') : '&nbsp;'}
+        </span>
+        <span class="node-type-icon">${getTypeIcon(node.type)}</span>
+        <span class="tree-node-name ${node.active ? '' : 'hidden'}">${node.name}</span>
+        <span class="eye-icon ${node.active ? 'active' : 'inactive'}" title="${node.active ? 'Hide' : 'Show'} Node">${getEyeIcon(node.active)}</span>
+      `;
+      nodeWrapper.setAttribute('data-state', stateKey);
+    }
     
     if (isExpanded && node.children.length > 0) {
       let childrenContainer = nodeWrapper.querySelector('.tree-node-children');
@@ -145,7 +162,15 @@ function syncNodeList(nodes, container, depth) {
     fragment.appendChild(nodeWrapper);
   });
 
-  container.innerHTML = '';
+  // Remove nodes that no longer exist
+  Array.from(container.children).forEach(child => {
+    const uuid = child.getAttribute('data-uuid');
+    if (uuid && !currentUuids.has(uuid)) {
+      child.remove();
+    }
+  });
+
+  // Re-append to maintain order and update
   container.appendChild(fragment);
 }
 
@@ -246,7 +271,8 @@ function renderProperties(detail) {
       let value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
       
       if (e.target.classList.contains('comp-toggle')) {
-        await evalCode(`window.__COCOS_INSPECTOR__.updateComponentProperty("${uuid}", "${compType}", "enabled", ${value})`);
+        const propToToggle = compType === 'cc.Node' ? 'active' : 'enabled';
+        await evalCode(`window.__COCOS_INSPECTOR__.updateComponentProperty("${uuid}", "${compType}", "${propToToggle}", ${value})`);
       } else {
         if (e.target.type === 'number') value = parseFloat(value);
         const valStr = typeof value === 'string' ? `"${value}"` : value;
@@ -325,6 +351,10 @@ searchInput.addEventListener('input', (e) => {
   renderTree();
 });
 
+autoRefreshToggle.addEventListener('change', (e) => {
+  state.autoRefresh = e.target.checked;
+});
+
 document.getElementById('refresh-btn').onclick = () => {
   updateTreeData();
 };
@@ -334,8 +364,10 @@ async function init() {
   await injectBridge();
   updateTreeData();
   setInterval(() => {
-    updateTreeData();
-    updateSelectedNodeDetail();
+    if (state.autoRefresh) {
+      updateTreeData();
+      updateSelectedNodeDetail();
+    }
   }, config.pollInterval);
 }
 
